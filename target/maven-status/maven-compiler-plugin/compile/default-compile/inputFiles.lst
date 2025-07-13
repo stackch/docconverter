@@ -1,3 +1,11 @@
-/workspaces/docconverter/src/main/java/ch/std/doc/converter/DocConverter.java
+/workspaces/docconverter/src/main/java/ch/std/doc/converter/core/impl/DocxToPdfConverter.java
+/workspaces/docconverter/src/main/java/ch/std/doc/converter/core/impl/ExcelToPdfConverter.java
+/workspaces/docconverter/src/main/java/ch/std/doc/converter/app/DocumentConverterApp.java
+/workspaces/docconverter/src/main/java/ch/std/doc/converter/tools/DocxCreator.java
+/workspaces/docconverter/src/main/java/ch/std/doc/converter/core/impl/DocToPdfConverter.java
+/workspaces/docconverter/src/main/java/ch/std/doc/converter/tools/ExtendedDocxCreator.java
 /workspaces/docconverter/src/main/java/ch/std/doc/converter/ExtendedDocxCreator.java
+/workspaces/docconverter/src/main/java/ch/std/doc/converter/core/DocumentConverter.java
+/workspaces/docconverter/src/main/java/ch/std/doc/converter/tools/ExcelCreator.java
 /workspaces/docconverter/src/main/java/ch/std/doc/converter/DocxCreator.java
+/workspaces/docconverter/src/main/java/ch/std/doc/converter/core/DocumentConverterFactory.java

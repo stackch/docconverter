@@ -38,7 +38,7 @@
               </filters>
               <transformers>
                 <transformer>
-                  <mainClass>ch.std.doc.converter.DocConverter</mainClass>
+                  <mainClass>ch.std.doc.converter.app.DocumentConverterApp</mainClass>
                 </transformer>
               </transformers>
               <finalName>docconverter-${project.version}</finalName>

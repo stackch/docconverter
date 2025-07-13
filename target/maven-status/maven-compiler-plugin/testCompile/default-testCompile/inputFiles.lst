@@ -1,1 +1,5 @@
-/workspaces/docconverter/src/test/java/ch/std/doc/converter/DocConverterTest.java
+/workspaces/docconverter/src/test/java/ch/std/doc/converter/DocumentConverterFactoryTest.java
+/workspaces/docconverter/src/test/java/ch/std/doc/converter/core/impl/DocToPdfConverterTest.java
+/workspaces/docconverter/src/test/java/ch/std/doc/converter/core/impl/ExcelToPdfConverterTest.java
+/workspaces/docconverter/src/test/java/ch/std/doc/converter/core/impl/DocxToPdfConverterTest.java
+/workspaces/docconverter/src/test/java/ch/std/doc/converter/core/DocumentConverterFactoryTest.java

@@ -99,7 +99,7 @@
                             </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>ch.std.doc.converter.DocConverter</mainClass>
+                                    <mainClass>ch.std.doc.converter.app.DocumentConverterApp</mainClass>
                                 </transformer>
                             </transformers>
                             <finalName>docconverter-${project.version}</finalName>

@@ -1,0 +1,6 @@
+ch/std/doc/converter/DocxCreator.class
+ch/std/doc/converter/DocConverter$PageNumberEventHandler.class
+ch/std/doc/converter/DocConverter$FinalPageNumberEventHandler.class
+ch/std/doc/converter/ExtendedDocxCreator.class
+ch/std/doc/converter/DocConverter$1.class
+ch/std/doc/converter/DocConverter.class

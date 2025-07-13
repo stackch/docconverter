@@ -243,14 +243,58 @@ public class DocxToPdfConverter extends DocumentConverter {
         }
         
         if (text != null && !text.trim().isEmpty()) {
-            Paragraph pdfParagraph = new Paragraph(text).setFontSize(11);
+            Paragraph pdfParagraph = new Paragraph();
             
+            // Verarbeite jeden Run einzeln um Formatierung zu erhalten
+            boolean hasContent = false;
+            for (XWPFRun run : para.getRuns()) {
+                String runText = run.getText(0);
+                if (runText != null && !runText.isEmpty()) {
+                    com.itextpdf.layout.element.Text textElement = 
+                        new com.itextpdf.layout.element.Text(runText);
+                    
+                    // Schriftgröße
+                    int fontSize = run.getFontSize() != -1 ? run.getFontSize() : 11;
+                    textElement.setFontSize(fontSize);
+                    
+                    // Fett/Kursiv
+                    if (run.isBold()) {
+                        textElement.setBold();
+                    }
+                    if (run.isItalic()) {
+                        textElement.setItalic();
+                    }                            // Textfarbe aus DOCX extrahieren
+                            String colorHex = run.getColor();
+                            if (colorHex != null && !colorHex.equals("auto") && colorHex.length() == 6) {
+                                try {
+                                    int r = Integer.parseInt(colorHex.substring(0, 2), 16);
+                                    int g = Integer.parseInt(colorHex.substring(2, 4), 16);
+                                    int b = Integer.parseInt(colorHex.substring(4, 6), 16);
+                                    textElement.setFontColor(new DeviceRgb(r, g, b));
+                                } catch (Exception e) {
+                                    // Ignoriere Farbfehler
+                                }
+                            }
+                    
+                    pdfParagraph.add(textElement);
+                    hasContent = true;
+                }
+            }
+            
+            // Fallback wenn keine Runs
+            if (!hasContent) {
+                pdfParagraph.add(text);
+                pdfParagraph.setFontSize(11);
+            }
+            
+            // Paragraph-Level Formatierung
             if (isHeading(para)) {
                 pdfParagraph.setFontSize(16).setBold().setMarginTop(15).setMarginBottom(10);
             } else {
                 pdfParagraph.setMarginBottom(6);
             }
             
+            // Ausrichtung
             ParagraphAlignment alignment = para.getAlignment();
             if (alignment != null) {
                 switch (alignment) {
@@ -312,14 +356,66 @@ public class DocxToPdfConverter extends DocumentConverter {
                 .setMarginTop(10)
                 .setMarginBottom(10);
         
+        int rowIndex = 0;
         for (XWPFTableRow row : rows) {
             for (XWPFTableCell cell : row.getTableCells()) {
-                String cellText = cell.getText();
-                Cell pdfCell = new Cell().add(new Paragraph(cellText != null ? cellText : ""));
+                Paragraph cellParagraph = new Paragraph();
+                
+                // Extrahiere Formatierung aus allen Runs der Zelle
+                boolean hasContent = false;
+                for (XWPFParagraph para : cell.getParagraphs()) {
+                    for (XWPFRun run : para.getRuns()) {
+                        String runText = run.getText(0);
+                        if (runText != null && !runText.isEmpty()) {
+                            com.itextpdf.layout.element.Text textElement = 
+                                new com.itextpdf.layout.element.Text(runText);
+                            
+                            // Formatierung anwenden
+                            if (run.isBold()) {
+                                textElement.setBold();
+                            }
+                            if (run.isItalic()) {
+                                textElement.setItalic();
+                            }
+                            
+                            // Textfarbe aus DOCX
+                            String colorHex = run.getColor();
+                            if (colorHex != null && !colorHex.equals("auto") && colorHex.length() == 6) {
+                                try {
+                                    int r = Integer.parseInt(colorHex.substring(0, 2), 16);
+                                    int g = Integer.parseInt(colorHex.substring(2, 4), 16);
+                                    int b = Integer.parseInt(colorHex.substring(4, 6), 16);
+                                    textElement.setFontColor(new DeviceRgb(r, g, b));
+                                } catch (Exception e) {
+                                    // Ignoriere Farbfehler
+                                }
+                            }
+                            
+                            cellParagraph.add(textElement);
+                            hasContent = true;
+                        }
+                    }
+                }
+                
+                // Fallback wenn keine Runs
+                if (!hasContent) {
+                    String cellText = cell.getText();
+                    cellParagraph.add(cellText != null ? cellText : "");
+                }
+                
+                Cell pdfCell = new Cell().add(cellParagraph);
                 pdfCell.setPadding(6);
                 pdfCell.setBorder(new com.itextpdf.layout.borders.SolidBorder(0.5f));
+                
+                // Prüfe auf Hintergrundfarbe der Zelle
+                Color bgColor = extractCellBackgroundColor(cell);
+                if (bgColor != null) {
+                    pdfCell.setBackgroundColor(bgColor);
+                }
+                
                 pdfTable.addCell(pdfCell);
             }
+            rowIndex++;
         }
         
         doc.add(pdfTable);
@@ -337,5 +433,56 @@ public class DocxToPdfConverter extends DocumentConverter {
         }
         
         return false;
+    }
+    
+    /**
+     * Extrahiert die Hintergrundfarbe einer Tabellenzelle
+     */
+    private Color extractCellBackgroundColor(XWPFTableCell cell) {
+        try {
+            // Prüfe CTTcPr (Cell Properties) für Shading
+            if (cell.getCTTc() != null && cell.getCTTc().getTcPr() != null) {
+                if (cell.getCTTc().getTcPr().getShd() != null) {
+                    Object fillObj = cell.getCTTc().getTcPr().getShd().getFill();
+                    
+                    if (fillObj != null) {
+                        // Wenn es ein Byte-Array ist, konvertiere zu Hex
+                        if (fillObj instanceof byte[]) {
+                            byte[] colorBytes = (byte[]) fillObj;
+                            if (colorBytes.length >= 3) {
+                                StringBuilder hexColor = new StringBuilder();
+                                for (int i = 0; i < Math.min(3, colorBytes.length); i++) {
+                                    hexColor.append(String.format("%02X", colorBytes[i] & 0xFF));
+                                }
+                                String colorHex = hexColor.toString();
+                                
+                                if (colorHex.length() == 6) {
+                                    int r = Integer.parseInt(colorHex.substring(0, 2), 16);
+                                    int g = Integer.parseInt(colorHex.substring(2, 4), 16);
+                                    int b = Integer.parseInt(colorHex.substring(4, 6), 16);
+                                    return new DeviceRgb(r, g, b);
+                                }
+                            }
+                        }
+                        
+                        // Versuche als String (fallback)
+                        String colorStr = fillObj.toString();
+                        if (!colorStr.startsWith("[B@") && !colorStr.equals("auto") && colorStr.length() == 6) {
+                            try {
+                                int r = Integer.parseInt(colorStr.substring(0, 2), 16);
+                                int g = Integer.parseInt(colorStr.substring(2, 4), 16);
+                                int b = Integer.parseInt(colorStr.substring(4, 6), 16);
+                                return new DeviceRgb(r, g, b);
+                            } catch (Exception e) {
+                                // Ignoriere String-Parsing-Fehler
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Ignoriere Extraktionsfehler
+        }
+        return null;
     }
 }

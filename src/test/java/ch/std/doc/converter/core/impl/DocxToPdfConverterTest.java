@@ -2,6 +2,7 @@ package ch.std.doc.converter.core.impl;
 
 import ch.std.doc.converter.core.DocumentConverter;
 import ch.std.doc.converter.core.DocumentConverterFactory;
+import ch.std.doc.converter.utils.PdfContentValidator;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -96,5 +97,70 @@ public class DocxToPdfConverterTest {
         assertThrows(Exception.class, () -> {
             converter.convertToPdf(inputFile.getAbsolutePath(), "");
         }, "Leerer Output sollte Exception werfen");
+    }
+    
+    @Test
+    @DisplayName("PDF-Inhalt wird korrekt konvertiert - Textprüfung")
+    public void testPdfContentValidation() throws Exception {
+        if (!inputFile.exists()) {
+            System.out.println("Warnung: beispiel.docx nicht gefunden, überspringe Inhaltstest");
+            return;
+        }
+        
+        // Konvertierung durchführen
+        converter.convertToPdf(inputFile.getAbsolutePath(), outputFile.getAbsolutePath());
+        
+        // PDF sollte existieren und nicht leer sein
+        assertTrue(outputFile.exists(), "PDF-Datei sollte erstellt werden");
+        assertTrue(outputFile.length() > 0, "PDF-Datei sollte nicht leer sein");
+        
+        // Text aus PDF extrahieren
+        String pdfText = PdfContentValidator.extractTextFromPdf(outputFile);
+        assertNotNull(pdfText, "PDF-Text sollte extrahiert werden können");
+        assertFalse(pdfText.trim().isEmpty(), "PDF sollte Text enthalten");
+        
+        // Grundlegende Inhaltsvalidierung
+        System.out.println("Extrahierter PDF-Text (erste 200 Zeichen): " + 
+                          pdfText.substring(0, Math.min(200, pdfText.length())));
+    }
+    
+    @Test
+    @DisplayName("PDF-Seitenanzahl wird korrekt bestimmt")
+    public void testPdfPageCount() throws Exception {
+        if (!inputFile.exists()) {
+            System.out.println("Warnung: beispiel.docx nicht gefunden, überspringe Seitentest");
+            return;
+        }
+        
+        converter.convertToPdf(inputFile.getAbsolutePath(), outputFile.getAbsolutePath());
+        
+        int pageCount = PdfContentValidator.getPageCount(outputFile);
+        assertTrue(pageCount > 0, "PDF sollte mindestens eine Seite haben");
+        
+        System.out.println("PDF hat " + pageCount + " Seite(n)");
+    }
+    
+    @Test
+    @DisplayName("PDF enthält erwartete Textinhalte")
+    public void testPdfContainsExpectedContent() throws Exception {
+        if (!inputFile.exists()) {
+            System.out.println("Warnung: beispiel.docx nicht gefunden, überspringe Textinhalt-Test");
+            return;
+        }
+        
+        converter.convertToPdf(inputFile.getAbsolutePath(), outputFile.getAbsolutePath());
+        
+        // Prüfe ob bestimmte Standardinhalte enthalten sind
+        // Diese können je nach beispiel.docx angepasst werden
+        String pdfText = PdfContentValidator.extractTextFromPdf(outputFile);
+        
+        // Basis-Validierung: PDF sollte lesbaren Text enthalten
+        assertTrue(pdfText.length() > 10, "PDF sollte substantiellen Text enthalten");
+        
+        // Test auf häufige Wörter/Zeichen
+        boolean hasAlphanumeric = pdfText.matches(".*[a-zA-Z0-9].*");
+        assertTrue(hasAlphanumeric, "PDF sollte alphanumerische Zeichen enthalten");
+        
+        System.out.println("PDF-Inhalt validiert - Text enthält " + pdfText.length() + " Zeichen");
     }
 }

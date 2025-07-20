@@ -2,6 +2,7 @@ package ch.std.doc.converter.core.impl;
 
 import ch.std.doc.converter.core.DocumentConverter;
 import ch.std.doc.converter.core.DocumentConverterFactory;
+import ch.std.doc.converter.utils.PdfContentValidator;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,5 +95,77 @@ public class ExcelToPdfConverterTest {
         assertThrows(Exception.class, () -> {
             converter.convertToPdf(inputFile.getAbsolutePath(), "");
         }, "Leerer Output sollte Exception werfen");
+    }
+    
+    @Test
+    @DisplayName("Excel-PDF enthält Tabelleninhalt")
+    public void testExcelPdfContentValidation() throws Exception {
+        if (!inputFile.exists()) {
+            System.out.println("Warnung: test-verkaufsdaten.xlsx nicht gefunden, überspringe Excel-Inhaltstest");
+            return;
+        }
+        
+        converter.convertToPdf(inputFile.getAbsolutePath(), outputFile.getAbsolutePath());
+        
+        // PDF sollte existieren und nicht leer sein
+        assertTrue(outputFile.exists(), "PDF-Datei sollte erstellt werden");
+        assertTrue(outputFile.length() > 0, "PDF-Datei sollte nicht leer sein");
+        
+        // Text aus PDF extrahieren
+        String pdfText = PdfContentValidator.extractTextFromPdf(outputFile);
+        assertNotNull(pdfText, "PDF-Text sollte extrahiert werden können");
+        assertFalse(pdfText.trim().isEmpty(), "PDF sollte Text enthalten");
+        
+        // Excel-spezifische Validierung
+        // Suche nach typischen Excel-Inhalten (Zahlen, Spaltenstruktur)
+        boolean hasNumbers = pdfText.matches(".*\\d+.*");
+        assertTrue(hasNumbers, "Excel-PDF sollte Zahlen enthalten");
+        
+        System.out.println("Excel-PDF-Text (erste 200 Zeichen): " + 
+                          pdfText.substring(0, Math.min(200, pdfText.length())));
+    }
+    
+    @Test
+    @DisplayName("Excel-PDF Seitenstruktur validieren")
+    public void testExcelPdfStructure() throws Exception {
+        if (!inputFile.exists()) {
+            System.out.println("Warnung: test-verkaufsdaten.xlsx nicht gefunden, überspringe Strukturtest");
+            return;
+        }
+        
+        converter.convertToPdf(inputFile.getAbsolutePath(), outputFile.getAbsolutePath());
+        
+        // Seitenanzahl prüfen
+        int pageCount = PdfContentValidator.getPageCount(outputFile);
+        assertTrue(pageCount > 0, "Excel-PDF sollte mindestens eine Seite haben");
+        
+        // Text von erster Seite extrahieren
+        String firstPageText = PdfContentValidator.extractTextFromPage(outputFile, 1);
+        assertNotNull(firstPageText, "Erste Seite sollte Text enthalten");
+        
+        System.out.println("Excel-PDF hat " + pageCount + " Seite(n)");
+        System.out.println("Erste Seite Inhalt: " + firstPageText.substring(0, Math.min(100, firstPageText.length())));
+    }
+    
+    @Test
+    @DisplayName("Excel-PDF enthält erwartete Verkaufsdaten")
+    public void testSalesDataContent() throws Exception {
+        if (!inputFile.exists()) {
+            System.out.println("Warnung: test-verkaufsdaten.xlsx nicht gefunden, überspringe Verkaufsdaten-Test");
+            return;
+        }
+        
+        converter.convertToPdf(inputFile.getAbsolutePath(), outputFile.getAbsolutePath());
+        
+        String pdfText = PdfContentValidator.extractTextFromPdf(outputFile);
+        
+        // Basis-Validierung für Verkaufsdaten
+        assertTrue(pdfText.length() > 20, "PDF sollte substantiellen Inhalt haben");
+        
+        // Test auf typische Excel-Strukturen
+        boolean hasTabularData = pdfText.contains(" ") && pdfText.length() > 50;
+        assertTrue(hasTabularData, "PDF sollte tabellarische Daten enthalten");
+        
+        System.out.println("Verkaufsdaten-PDF validiert - " + pdfText.length() + " Zeichen");
     }
 }

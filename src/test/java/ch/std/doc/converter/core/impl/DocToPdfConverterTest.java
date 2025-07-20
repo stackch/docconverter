@@ -2,6 +2,7 @@ package ch.std.doc.converter.core.impl;
 
 import ch.std.doc.converter.core.DocumentConverter;
 import ch.std.doc.converter.core.DocumentConverterFactory;
+import ch.std.doc.converter.utils.PdfContentValidator;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,5 +93,59 @@ public class DocToPdfConverterTest {
         }, "Ungültiger Ausgabepfad sollte Exception werfen");
         
         System.out.println("DOC-Konverter behandelt ungültige Eingaben korrekt");
+    }
+    
+    @Test
+    @DisplayName("DOC-Datei Konvertierung mit Inhaltsvalidierung")
+    public void testDocContentConversion() throws Exception {
+        // Teste mit der verfügbaren Generalversammlung.doc
+        File docFile = new File("s:\\develop\\java\\docconverter\\Generalversammlung.doc");
+        
+        if (!docFile.exists()) {
+            System.out.println("Warnung: Generalversammlung.doc nicht gefunden, überspringe DOC-Inhaltstest");
+            return;
+        }
+        
+        // Konvertierung durchführen
+        assertDoesNotThrow(() -> {
+            converter.convertToPdf(docFile.getAbsolutePath(), outputFile.getAbsolutePath());
+        }, "DOC-Konvertierung sollte erfolgreich sein");
+        
+        // Basis-Validierung
+        assertTrue(outputFile.exists(), "PDF sollte erstellt werden");
+        assertTrue(outputFile.length() > 0, "PDF sollte nicht leer sein");
+        
+        // Inhaltliche Validierung
+        String pdfText = PdfContentValidator.extractTextFromPdf(outputFile);
+        assertNotNull(pdfText, "PDF-Text sollte extrahiert werden können");
+        assertFalse(pdfText.trim().isEmpty(), "PDF sollte Text enthalten");
+        
+        System.out.println("DOC-PDF-Text (erste 150 Zeichen): " + 
+                          pdfText.substring(0, Math.min(150, pdfText.length())));
+    }
+    
+    @Test
+    @DisplayName("DOC-PDF Strukturvalidierung")
+    public void testDocPdfStructure() throws Exception {
+        File docFile = new File("s:\\develop\\java\\docconverter\\Generalversammlung.doc");
+        
+        if (!docFile.exists()) {
+            System.out.println("Warnung: Generalversammlung.doc nicht gefunden, überspringe Strukturtest");
+            return;
+        }
+        
+        converter.convertToPdf(docFile.getAbsolutePath(), outputFile.getAbsolutePath());
+        
+        // Seitenanzahl validieren
+        int pageCount = PdfContentValidator.getPageCount(outputFile);
+        assertTrue(pageCount > 0, "DOC-PDF sollte mindestens eine Seite haben");
+        
+        // Textinhalt der ersten Seite prüfen
+        String firstPageText = PdfContentValidator.extractTextFromPage(outputFile, 1);
+        assertNotNull(firstPageText, "Erste Seite sollte Text enthalten");
+        assertTrue(firstPageText.length() > 10, "Erste Seite sollte substantiellen Text enthalten");
+        
+        System.out.println("DOC-PDF Struktur: " + pageCount + " Seite(n), erste Seite: " + 
+                          firstPageText.length() + " Zeichen");
     }
 }
